@@ -124,15 +124,20 @@
       aspect-ratio: 1.65;
       padding: clamp(18px, 5vw, 58px);
       overflow: hidden;
-      border: 1px solid rgb(255 255 255 / .28);
+      border: 1px solid rgb(210 255 242 / .35);
       border-radius: clamp(16px, 2.5vw, 25px);
       background: linear-gradient(130deg, #23243a, #111723 56%, #18232a);
-      box-shadow: 0 30px 100px rgb(0 0 0 / .5), inset 0 1px 0 rgb(255 255 255 / .22);
+      box-shadow:
+        0 0 0 1px rgb(178 255 228 / .08),
+        0 0 18px 1px rgb(116 255 221 / .16),
+        0 0 42px 2px rgb(168 130 255 / .13),
+        0 30px 100px rgb(0 0 0 / .5),
+        inset 0 1px 0 rgb(255 255 255 / .22);
       transform: perspective(1100px) translateY(var(--drift-y)) rotateX(var(--rotate-x)) rotateY(var(--rotate-y));
       transform-style: preserve-3d;
       transition: transform 180ms ease-out, --sheen-x 240ms ease-out, --sheen-y 240ms ease-out;
       will-change: transform;
-      touch-action: pan-y;
+      touch-action: none;
     }
     /* The same slow-moving glitter used on timmoth.com, clipped to the card. */
     .sparkles {
@@ -141,12 +146,11 @@
       inset: 0;
       overflow: hidden;
       border-radius: inherit;
-      background: url("/sparkles.gif") repeat;
-      background-size: 768px auto;
       mix-blend-mode: screen;
       opacity: .12;
       pointer-events: none;
     }
+    .sparkles.is-ready { background: url("/sparkles.gif") repeat; background-size: 768px auto; }
     /* Broad foil color shifts with card tilt; the specular spot follows its angle. */
     .card::before, .card::after {
       position: absolute;
@@ -178,16 +182,23 @@
     .portrait {
       position: relative;
       z-index: 4;
-      width: clamp(68px, 24vw, 210px);
+      --portrait-size: clamp(68px, 24vw, 210px);
+      width: var(--portrait-size);
+      height: var(--portrait-size);
       aspect-ratio: 1;
       justify-self: end;
+      flex: none;
+      overflow: hidden;
       padding: 5px;
       border: 1px solid rgb(255 255 255 / .67);
       border-radius: 50%;
       background: conic-gradient(from 205deg, #8dffe0, #d5b9ff, white, #9affeb, #c29fff, #8dffe0);
       box-shadow: 0 0 0 5px rgb(255 255 255 / .035), 0 0 34px rgb(139 255 222 / .22), 0 0 62px rgb(193 151 255 / .14);
       transform: translateZ(26px);
+      opacity: 0;
+      transition: opacity 350ms ease;
     }
+    .portrait.is-ready { opacity: 1; }
     .portrait img {
       display: block;
       width: 100%;
@@ -269,8 +280,7 @@
     @media (max-width: 560px) {
       body { padding: 16px; }
       .card { gap: 11px; padding: 16px; border-radius: 17px; }
-      .portrait { width: clamp(62px, 21vw, 88px); padding: 3px; }
-      .portrait img { transform: scale(1.1); }
+      .portrait { --portrait-size: clamp(62px, 21vw, 88px); padding: 3px; }
       h1 { font-size: clamp(25px, 8vw, 34px); }
       .tagline { margin-top: 7px; font-size: clamp(10px, 3vw, 12px); }
       .actions { gap: 5px 10px; margin-top: 9px; }
@@ -317,7 +327,7 @@
           </a>
         </nav>
       </div>
-      <div class="portrait"><picture><source srcset="/portrait.webp" type="image/webp"><img src="/profile.jpeg" alt="Tim Jones" width="460" height="460" fetchpriority="high"></picture></div>
+      <div class="portrait"><picture><source srcset="/portrait.webp" type="image/webp"><img src="/profile.jpeg" alt="Tim Jones" width="460" height="460" fetchpriority="high" decoding="async"></picture></div>
     </article>
   </main>
   <script>
@@ -325,7 +335,20 @@
       const card = document.getElementById('card');
       const wrap = document.getElementById('cardWrap');
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const touchInput = window.matchMedia('(pointer: coarse)').matches;
+      const portrait = document.querySelector('.portrait');
+      const portraitImage = portrait.querySelector('img');
+      const sparkles = document.querySelector('.sparkles');
       let manual = false;
+
+      const revealPortrait = () => {
+        if (portraitImage.naturalWidth > 0) {
+          portrait.classList.add('is-ready');
+          sparkles.classList.add('is-ready');
+        }
+      };
+      if (portraitImage.complete) revealPortrait();
+      else portraitImage.addEventListener('load', revealPortrait, { once: true });
 
       const setPose = (x, y, lift = 0) => {
         card.style.setProperty('--rotate-x', `${x.toFixed(2)}deg`);
@@ -341,7 +364,7 @@
         const bounds = wrap.getBoundingClientRect();
         const px = Math.max(-1, Math.min(1, ((clientX - bounds.left) / bounds.width - .5) * 2));
         const py = Math.max(-1, Math.min(1, ((clientY - bounds.top) / bounds.height - .5) * 2));
-        setPose(-py * 8, px * 10, -1.5);
+        setPose(-py * (touchInput ? 15 : 8), px * (touchInput ? 17 : 10), -1.5);
       };
 
       wrap.addEventListener('pointermove', (event) => {
@@ -364,9 +387,10 @@
         const drift = (now) => {
           if (!manual) {
             const t = (now - start) / 1000;
-            const x = Math.sin(t * .34) * 2.1 + Math.sin(t * .16) * .55;
-            const y = Math.cos(t * .27) * 2.8 + Math.sin(t * .12) * .45;
-            setPose(x, y, Math.sin(t * .42) * 2);
+            const strength = touchInput ? 1.7 : 1;
+            const x = (Math.sin(t * .31) * 3.8 + Math.sin(t * .15) * .9) * strength;
+            const y = (Math.cos(t * .25) * 4.7 + Math.sin(t * .11) * .8) * strength;
+            setPose(x, y, Math.sin(t * .4) * 3.5);
           }
           requestAnimationFrame(drift);
         };
