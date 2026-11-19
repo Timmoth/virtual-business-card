@@ -75,6 +75,7 @@
     @property --sheen-x { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
     @property --sheen-y { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
     * { box-sizing: border-box; }
+    html { overflow-x: hidden; } /* .card-wrap::before's negative inset (the blurred halo) bleeds past body's own overflow:hidden on narrow phones */
     body {
       min-width: 320px;
       min-height: 100svh;
@@ -217,7 +218,7 @@
       right: 0;
       margin: 0;
       color: var(--mint);
-      font-size: clamp(8px, 1.2vw, 10px);
+      font-size: clamp(10px, 1.5vw, 11px);
       font-weight: 750;
       letter-spacing: .2em;
       line-height: 1;
@@ -289,9 +290,9 @@
       .card { gap: 11px; padding: 16px; border-radius: 17px; }
       .portrait { --portrait-size: clamp(62px, 21vw, 88px); padding: 3px; }
       h1 { font-size: clamp(25px, 8vw, 34px); }
-      .tagline { margin-top: 7px; font-size: clamp(10px, 3vw, 12px); }
+      .tagline { margin-top: 7px; font-size: 12px; }
       .actions { gap: 5px 10px; margin-top: 9px; }
-      .contact, .resume { min-height: 30px; font-size: 10px; }
+      .contact, .resume { min-height: 30px; font-size: 12px; }
       .contact { padding-inline: 10px; }
       .contact svg { width: 12px; height: 12px; }
       .socials { gap: 4px; margin-top: 7px; }
